@@ -1,0 +1,9 @@
+.DS_Store
+*.log
+*.sql
+/old_files/*
+/input_files/*
+/output_files/*
+/dev_py_append/*
+/test_files/*
+
