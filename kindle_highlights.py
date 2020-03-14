@@ -17,7 +17,8 @@ for file_path in files_list:
     with codecs.open(file_path, 'r', 'utf-8') as f:              # Open file
         txt = f.readlines()
         txt = [item.replace('\ufeff','') for item in txt]        # Codification at the begining of the txt file
-        txt = [item.replace('\r\n','') for item in txt]                     
+        txt = [item.replace('\n','') for item in txt]   
+        txt = [item.replace('\r','') for item in txt]                       
                               
     list_of_highlights = [txt[i: i + 5:3] for i in range(0, len(txt), 5) if txt[i+3] != ""]  # Unpacking original list into a list of lists
     # Alternative code: list_of_highlights = [i for i in zip(*[iter(txt)]*5)]
