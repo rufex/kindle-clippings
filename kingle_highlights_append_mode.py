@@ -20,6 +20,8 @@ files_list = os_path_input.glob('*.txt')   # List of TXT files in the input fold
 now = datetime.datetime.now()
 today = now.strftime("%Y-%m-%d")
 
+dictio_books = defaultdict(list)                          # DefaultDic = {key: [values]}
+
 for file_path in files_list:
     with codecs.open(file_path, 'r', 'utf-8') as f:              # Open file
         txt = f.readlines()
@@ -30,8 +32,6 @@ for file_path in files_list:
     list_of_highlights = [txt[i: i + 5:3] for i in range(0, len(txt), 5) if txt[i+3] != ""]  # Unpacking original list into a list of lists
     # Alternative code: list_of_highlights = [i for i in zip(*[iter(txt)]*5)]
 
-    dictio_books = defaultdict(list)                          # DefaultDic = {key: [values]}
-
     for title, highlight in list_of_highlights:
         title = re.sub(r'[^A-Za-zÀ-ÿ0-9-()\s]','',title)      # Remove special characters from book's name     
         dictio_books[title].append('* ' + highlight)          # DefaultDic: {Title:[Highlights]}
@@ -39,35 +39,36 @@ for file_path in files_list:
 highlight_counter = Counter()                                 # To keep the count of amount of Highlights for each book.
 
 for book, highlights in dictio_books.items():
-    for each in list_books_stored:
-        if each.stem == book:
-            with codecs.open(each, 'r', 'utf-8') as f:
-                txt_stored = f.read()
-            
-            clean_list = list()
+    if book in str(list_books_stored):
+        path_file = [path for path in list_books_stored if path.stem == book]
+        path_file = Path(path_file[0])
+        with codecs.open(path_file, 'r', 'utf-8') as f:     # What if more than one file?
+            txt_stored = f.read()
+        
+        clean_list = list()
 
-            for highlight in highlights:
-                if highlight not in str(txt_stored):
-                    clean_list.append(highlight)
-                    highlight_counter[book] += 1
-
-            with codecs.open(each, 'a', 'utf-8') as f:
-                f.write(str('\r\n\r\n'))            
-                f.write('\r\n\r\n'.join(clean_list)) 
-
-            with codecs.open(log_list, 'a', 'utf-8') as log:              # Open file
-                log.write(f'[{today}] Added {highlight_counter[book]:.0f} to {each.stem}')
-
-        else:
-            for highlight in highlights:
+        for highlight in highlights:
+            if highlight not in str(txt_stored):
+                clean_list.append(highlight)
                 highlight_counter[book] += 1
 
-            file_path = os_path_output.joinpath(book+".txt")     # Asign Book's Title as file name
+        with codecs.open(path_file, 'a', 'utf-8') as f:
+            f.write(str('\r\n\r\n'))            
+            f.write('\r\n\r\n'.join(clean_list)) 
+
+        with codecs.open(log_list, 'a', 'utf-8') as log:              # Open file
+            log.write(f'[{today}] Added {highlight_counter[book]:.0f} to {path_file.stem}')
+
+    else:
+        for highlight in highlights:
+            highlight_counter[book] += 1
+
+        file_path = os_path_output.joinpath(book+".txt")     # Asign Book's Title as file name
             
-            with codecs.open(file_path,'w+','utf_8') as f:    
-                f.write(str(book))                            # Write Book's Title in txt file
-                f.write(str('\r\n\r\n\r\n'))                  # Add spaces between title and highlights
-                f.write('\r\n\r\n'.join(highlights))          # Write Highlights in txt file, with whitespaces between them
+        with codecs.open(file_path,'w+','utf_8') as f:    
+            f.write(str(book))                            # Write Book's Title in txt file
+            f.write(str('\r\n\r\n\r\n'))                  # Add spaces between title and highlights
+            f.write('\r\n\r\n'.join(highlights))          # Write Highlights in txt file, with whitespaces between them
              
 
 
