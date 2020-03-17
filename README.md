@@ -17,14 +17,6 @@ It a variant originated from the previous script. In this case, instead of creat
 
 # To-Do:
 - Create a Virtual Enviroment and a requeriments.txt
-- Add command-line interaction:
-    - run script
-    - show list of new files and files to be appendend.
-    - Confirm/Refuse:
-        - Append existing ones and create new files.
-        - Refuse append. Create files for everyone.
-        - Refuse all.
-        
-click options: --run --append-mode --create-mode --end
+
 
 

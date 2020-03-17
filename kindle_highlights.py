@@ -5,7 +5,7 @@ import codecs, re
 from collections import defaultdict
 from pathlib import Path
 
-path_kindle = Path.cwd()
+path_kindle = Path(__file__).parent
 input_folder = 'input_files'      
 output_folder = 'output_files'
 os_path_input = path_kindle.joinpath(input_folder)
