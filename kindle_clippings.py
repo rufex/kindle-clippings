@@ -5,22 +5,21 @@ from collections import defaultdict, Counter
 from pathlib import Path
 from operator import itemgetter
 
-file_path = Path(__file__).parent
-paths_yaml = yaml.safe_load(open(Path.joinpath(file_path,"config_kindle_highlights.yml")))
+kindle_file_path = Path(__file__).parent
+paths_yaml = yaml.safe_load(open(Path.joinpath(kindle_file_path,"config_kindle_highlights.yml")))
 
 bookshelf = Path(paths_yaml["Paths"]["bookshelf"])
 list_books_stored = list(bookshelf.rglob('*.txt')) # List of all TXT already stored
 
-path_kindle = Path.cwd()
-os_path_input = path_kindle.joinpath(file_path, paths_yaml["Paths"]["input_folder"])
-os_path_output = path_kindle.joinpath(file_path, paths_yaml["Paths"]["output_folder"])
-log_list = path_kindle.joinpath(file_path, paths_yaml["Paths"]["log_file"])
+os_path_input = Path.joinpath(kindle_file_path, paths_yaml["Paths"]["input_folder"])
+os_path_output = Path.joinpath(kindle_file_path, paths_yaml["Paths"]["output_folder"])
+log_list = Path.joinpath(kindle_file_path, paths_yaml["Paths"]["log_file"])
 
 new_files_list = os_path_input.glob('*.txt')   # List of TXT files in the input folder
 
 today = datetime.datetime.now().strftime("%Y-%m-%d")
 
-highlight_counter = Counter()                                 # To keep the count of amount of Highlights for each book.
+highlight_counter = Counter()                             # To keep the count of amount of Highlights for each book.
 highlight_counter_full = Counter()
 dictio_books = defaultdict(list)                          # DefaultDic = {key: [values]}
 new_dictio_book = defaultdict(list)                       # DefaultDic for books that don't have previous file
@@ -67,6 +66,7 @@ def separate_clippings_new_old(dictio):
                 highlight_counter[book] += 1
               
 def append_to_files(dictio):
+    """ Export function for appending new highlights to existing files """
     for book, highlights in dictio.items():
         path_file = [path for path in list_books_stored if path.stem == book]
         path_file = Path(path_file[0]) 
@@ -76,13 +76,12 @@ def append_to_files(dictio):
             f.write('\r\n\r\n'.join(highlights)) 
 
         with codecs.open(log_list, 'a', 'utf-8') as log:              # Open log-file. Append mode.
-            log_txt = f'[{today}] Added {highlight_counter[book]:.0f} to {path_file.stem}'
+            log_txt = f'[{today}] Added {highlight_counter[book]:.0f} to {path_file.stem} \n'
             log.write(log_txt)
             print(log_txt)
-    
-    quit()
 
 def create_files(dictio):
+    """ Export function for creating new files in the ouput folder """
     for book, highlights in dictio.items():
         path_file = os_path_output.joinpath(book+".txt")  # Asign Book's Title as file name 
         with codecs.open(path_file,'w+','utf_8') as f:    # New file. Write mode.
@@ -91,13 +90,12 @@ def create_files(dictio):
             f.write('\r\n\r\n'.join(highlights))          # Write Highlights in txt file, with whitespaces between them
 
         with codecs.open(log_list, 'a', 'utf-8') as log:              # Open log-file. Append mode.
-            log_txt = f'[{today}] New TXT File. Added {highlight_counter[book]:.0f} to {path_file.stem}'
+            log_txt = f'[{today}] New TXT File. Added {highlight_counter[book]:.0f} to {path_file.stem} \n'
             log.write(log_txt)
             print(log_txt)
-    
-    quit()
 
 def counter_of_new_highlights():
+    "Make a list of books with their counts of total and new highlights"
     export_list = list()
     for book, count in highlight_counter_full.items():
         if book in existing_dictio_book.keys():
@@ -106,13 +104,22 @@ def counter_of_new_highlights():
             export_list.append((book,count,highlight_counter_full[book]))
         elif book not in existing_dictio_book.keys() and book not in new_dictio_book.keys():
             export_list.append((book,count,0)) 
-    print('\n')
     return export_list
 
 def print_detail_list(list_ready):
+    "Print the count list"
+    print('\n')
     sorted_l = sorted(list_ready, key=itemgetter(2),reverse=True)
     for each in sorted_l:
         print("Total {0[1]} || New {0[2]} || {0[0]}".format(each))
+    print("""
+    Options:
+
+    append-mode: Add only new highlights to existing files (and create a file for non-existing files).
+    create-mode: Create a new file for every book with the total of the higlights avaiable.
+    exit: finish the program without storing any highlight.
+    """
+    )
 
 @click.command()
 @click.option('--option', type=click.Choice(['append-mode','create-mode','exit']), prompt=True, show_choices=True)
@@ -125,7 +132,7 @@ def main_options(option):
     # option = click.prompt('append-mode / create-mode', type=str)
     if option == 'append-mode':
         append_to_files(existing_dictio_book)
-        create_files(new_files_list)
+        create_files(new_dictio_book)
     elif option == 'create-mode':
         create_files(dictio_books)
     elif option == 'exit':
@@ -138,7 +145,6 @@ def main():
     separate_clippings_new_old(dictio_books)
     list_to_show = counter_of_new_highlights()
     print_detail_list(list_to_show)
-
 
 if __name__ == "__main__":
     main()
