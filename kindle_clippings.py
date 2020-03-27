@@ -8,7 +8,7 @@ from operator import itemgetter
 kindle_file_path = Path(__file__).parent
 paths_yaml = yaml.safe_load(open(Path.joinpath(kindle_file_path,"config_kindle_highlights.yml")))
 
-bookshelf = Path(paths_yaml["Paths"]["bookshelf"])
+bookshelf = Path(paths_yaml["Paths"]["bookshelf"]) # Directory where previous TXT files are stored
 list_books_stored = list(bookshelf.rglob('*.txt')) # List of all TXT already stored
 
 os_path_input = Path.joinpath(kindle_file_path, paths_yaml["Paths"]["input_folder"])

@@ -1,4 +1,4 @@
-#! python3
+#! usr/bin/python3
 # -*- coding: utf-8 -*-
 
 import codecs, re
@@ -12,7 +12,8 @@ os_path_input = path_kindle.joinpath(input_folder)
 os_path_output = path_kindle.joinpath(output_folder)
 
 files_list = os_path_input.glob('*.txt')   # List of TXT files in the input folder
-        
+dictio_books = defaultdict(list)                          # DefaultDic = {key: [values]}       
+
 for file_path in files_list:
     with codecs.open(file_path, 'r', 'utf-8') as f:              # Open file
         txt = f.readlines()
@@ -22,8 +23,6 @@ for file_path in files_list:
                               
     list_of_highlights = [txt[i: i + 5:3] for i in range(0, len(txt), 5) if txt[i+3] != ""]  # Unpacking original list into a list of lists
     # Alternative code: list_of_highlights = [i for i in zip(*[iter(txt)]*5)]
-
-    dictio_books = defaultdict(list)                          # DefaultDic = {key: [values]}
 
     for title, highlight in list_of_highlights:
         title = re.sub(r'[^A-Za-zÀ-ÿ0-9-()\s]','',title)      # Remove special characters from book's name     
