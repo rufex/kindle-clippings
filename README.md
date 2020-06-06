@@ -20,11 +20,11 @@ You would nead two folders called "input_files" and "output_files" in the same d
 
 ---
 
-## "Kindle Highlights append mode.py
+## "Kindle Clippings.py"
 
 It a variant originated from the previous script. In this case, instead of creating a new file for every book. It first checks in your collection of previously generated files if there is already a file corresponding to the book to be exported, and only append to them the new ones.
 
-### How-to use it
+### How to use it
 
 You would need a YAML file called "config_kindle_highlights.yml", with the next structure:
 
