@@ -1,6 +1,6 @@
 # Kindle Clippings Organizer
 
->Python Script for extracting notes taken in a Kindle and organize them in a separate .txt file for each book or article.
+>Python Script for extracting notes taken in a Kindle and organize them in a separate .txt files for each book or article.
 
 In this directory, there are two variants covering the same idea:
 
@@ -26,14 +26,14 @@ It a variant originated from the previous script. In this case, instead of creat
 
 ### How to use it
 
-You would need a YAML file called "config_kindle_highlights.yml", with the next structure:
+You would need a YAML file called "config_kindle_highlights.yml", with the following structure:
 
 ```
 Paths:
-  bookshelf: { path to directory where you are storing your generated TXTs }
-  input_folder: "input_files"
-  output_folder: "output_files"
-  log_file: "log_files/log_file_exported.txt"
+  bookshelf: { full path to directory where you are storing your generated TXTs }
+  input_folder: { relative folder path }
+  output_folder: { relative folder path }
+  log_file: { relative log file path }
 ```
 
 Place your TXT exported from your Kindle in the input folder. After that, you can run your script from the your terminal. You will see a list of all the files that can be generated. And you will need to enter one option to proceed.
