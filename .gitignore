@@ -1,0 +1,12 @@
+# List of files and folders to ignore in Git
+.DS_Store
+*.log
+*.sql
+old_files/
+input_files/
+output_files/
+test_files/
+config_kindle_highlights.yml
+log_files/
+venv/
+.ipynb_checkpoints/
