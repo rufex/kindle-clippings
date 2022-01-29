@@ -10,3 +10,4 @@ config_kindle_highlights.yml
 log_files/
 venv/
 .ipynb_checkpoints/
+TODO.md
