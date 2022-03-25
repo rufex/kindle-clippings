@@ -4,6 +4,8 @@
 .vscode/
 *.log
 *.sql
+__pycache__
+.pytest_cache
 venv/
 input_files/
 output_files/
