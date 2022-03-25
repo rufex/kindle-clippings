@@ -11,19 +11,19 @@ from pathlib import Path
 from operator import itemgetter
 from terminaltables import AsciiTable
 
-kindle_file_path = Path(__file__).parent
-config_file_path = Path.joinpath(kindle_file_path,"config_kindle_highlights.yml")
+### Paths & Files ### 
+
+current_folder = Path(__file__).parent
+config_file_path = Path.joinpath(current_folder,"config_kindle_highlights.yml")
 paths_yaml = yaml.safe_load(open(config_file_path))
 
 bookshelf = Path(paths_yaml["Paths"]["bookshelf"])        # Directory where previous TXT files are stored
 list_books_stored = list(bookshelf.rglob('*.txt'))        # List of all TXT already stored
 
-os_path_input = Path.joinpath(kindle_file_path, paths_yaml["Paths"]["input_folder"])
-os_path_output = Path.joinpath(kindle_file_path, paths_yaml["Paths"]["output_folder"])
-log_list = Path.joinpath(kindle_file_path, paths_yaml["Paths"]["log_file"])
-
-new_files_list = list(os_path_input.glob('*.txt'))        # List of TXT files in the input folder
-first_new_file = new_files_list[0]                        # Path of the first TXT file in the input folder
+clippings_txt = Path(paths_yaml["Paths"]["clippings_file"]) # Path of the TXT file
+output_folder_path = Path(paths_yaml["Paths"]["output_folder"])
+log_file = Path(paths_yaml["Paths"]["log_file"])
+                    
 
 last_exported_date = paths_yaml["Paths"]["last_date"]     # To get a datetime object (and use it to compare)
 today = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -133,7 +133,7 @@ def append_to_files(dictio):
             f.write(str('\r\n\r\n'))            
             f.write('\r\n\r\n'.join(highlights)) 
 
-        with codecs.open(log_list, 'a', 'utf-8') as log:              # Open log-file. Append mode.
+        with codecs.open(log_file, 'a', 'utf-8') as log:              # Open log-file. Append mode.
             log_txt = f'[{today}] Added {highlight_counter[book]:.0f} to {path_file.stem} \n'
             log.write(log_txt)
             print(log_txt)
@@ -142,13 +142,13 @@ def append_to_files(dictio):
 def create_files(dictio):
     """Export function for creating new files in the ouput folder."""
     for book, highlights in dictio.items():
-        path_file = os_path_output.joinpath(book+".txt")  # Asign Book's Title as file name 
+        path_file = output_folder_path.joinpath(book+".txt")  # Asign Book's Title as file name 
         with codecs.open(path_file,'w+','utf_8') as f:    # New file. Write mode.
             f.write(str(book))                            # Write Book's Title in txt file
             f.write(str('\r\n\r\n\r\n'))                  # Add spaces between title and highlights
             f.write('\r\n\r\n'.join(highlights))          # Write Highlights in txt file, with whitespaces between them
 
-        with codecs.open(log_list, 'a', 'utf-8') as log:              # Open log-file. Append mode.
+        with codecs.open(log_file, 'a', 'utf-8') as log:              # Open log-file. Append mode.
             log_txt = f'[{today}] New TXT File. Added {highlight_counter[book]:.0f} to {path_file.stem} \n'
             log.write(log_txt)
             print(log_txt)
@@ -207,7 +207,7 @@ def main_options(option):
     quit()
 
 if __name__ == "__main__":
-    full_list = get_new_clippings_list(first_new_file)
+    full_list = get_new_clippings_list(clippings_txt)
     # Decision: Filter by date?
     full_dict, all_highlights_counter = get_clippings_dictio(full_list, input('Filter highlights from previous exports? [yes/no]: '))
     new_files_dict, existing_files_dict, highlight_counter = separate_clippings_new_old(full_dict)
