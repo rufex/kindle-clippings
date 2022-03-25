@@ -4,16 +4,21 @@ import datetime
 import yaml
 import dateparser
 import argparse
+
 from collections import defaultdict, Counter
 from pathlib import Path
 from operator import itemgetter
 from terminaltables import AsciiTable
 
+from src.tools import get_date, store_date
+
 ### Paths & Files ### 
 
 current_folder = Path(__file__).parent
 config_file_path = Path.joinpath(current_folder,"config_kindle_highlights.yml")
-paths_yaml = yaml.safe_load(open(config_file_path))
+
+with open(config_file_path, 'r') as f:
+    paths_yaml = yaml.safe_load(f)
 
 bookshelf = Path(paths_yaml["Paths"]["bookshelf"])        # Directory where previous TXT files are stored
 list_books_stored = list(bookshelf.rglob('*.txt'))        # List of all TXT already stored
@@ -34,24 +39,6 @@ parser = argparse.ArgumentParser(description="Process Kindle Clippings.")
 parser.add_argument('mode', choices=['append','create','show-list'], help="Which mode should we use? (append|create|show-list")
 parser.add_argument('--filter-date', action='store_true', help='Only look for new clippings, based on the date store in the YAML (last clipping exported in a previous run)')
 args = parser.parse_args()
-
-def get_date(input: str) -> datetime.datetime:
-    """Get a datetime object from the date stored together with the kindle clippings.
-    Parameter
-    ---------
-    input: str
-        Has the following structure: "- {text} | {text}, 1 of January of 2019 23:13:08"
-    """
-    date_str = input.split(', ')[1]
-    return dateparser.parse(date_str)
-
-
-def store_date(date: datetime.datetime):
-    """Store the date established as the last highlight exported in the YAML file."""
-    paths_yaml["Paths"]["last_date"] = date
-
-    with open(config_file_path, 'w') as f:
-        yaml.dump(paths_yaml, f)
 
 
 def get_new_clippings_list(input_file):
@@ -199,10 +186,10 @@ def main_options(option):
     if option == 'append':
         append_to_files(existing_files_dict)
         create_files(new_files_dict)
-        store_date(current_last_date)
+        store_date(current_last_date, config_file_path, paths_yaml)
     elif option == 'create':
         create_files(full_dict)
-        store_date(current_last_date)
+        store_date(current_last_date, config_file_path, paths_yaml)
     else:
         print('Nothing was exported.')
         pass
