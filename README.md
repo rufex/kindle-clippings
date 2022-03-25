@@ -22,7 +22,11 @@ Paths:
 ### How to use it
 
 1. Make sure your YAML contains all the needed information.
-1. Run your script from the your terminal.
-1. Choose if you want to filter the highlights based on the previous run of the script you made or not.
-1. You will see an overview of all the files that can be generated.
-1. Enter one option to proceed. 'Append-mode' will append the text to the existing file if there is one, otherwise it will create a new one. 'Create-mode' will create a new txt file for each book, independently if you already have one created or not. 'Exit' to end the script without generating any changes or new files.
+1. Run your script from the your terminal, passing the needed arguments.
+
+```
+python kindle_clippings.py [-h] [--filter-date] {append,create,show-list}
+```
+
+- mode: append, create, show-list
+- filter-date: (optional)

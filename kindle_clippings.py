@@ -1,11 +1,9 @@
-#! /usr/bin/python3
-
 import codecs
 import re
 import datetime
 import yaml
-import click
 import dateparser
+import argparse
 from collections import defaultdict, Counter
 from pathlib import Path
 from operator import itemgetter
@@ -29,6 +27,13 @@ last_exported_date = paths_yaml["Paths"]["last_date"]     # To get a datetime ob
 today = datetime.datetime.now().strftime("%Y-%m-%d")
 current_last_date = datetime.datetime(2000,1,1)           # Needed and empty datetime object to start with
 
+
+#### CLI arguments ###
+
+parser = argparse.ArgumentParser(description="Process Kindle Clippings.")
+parser.add_argument('mode', choices=['append','create','show-list'], help="Which mode should we use? (append|create|show-list")
+parser.add_argument('--filter-date', action='store_true', help='Only look for new clippings, based on the date store in the YAML (last clipping exported in a previous run)')
+args = parser.parse_args()
 
 def get_date(input: str) -> datetime.datetime:
     """Get a datetime object from the date stored together with the kindle clippings.
@@ -76,7 +81,7 @@ def get_clippings_dictio(input_list, check_date=True):
 
     for title, date_str, _ , highlight, _  in input_list:
         date = get_date(date_str)
-        if check_date.lower() == 'yes':
+        if check_date:
             if date > last_exported_date:                         # Only append newer clippings
                 append_clipping = True
                 if date > current_last_date:
@@ -185,36 +190,32 @@ def print_detail_list(list_ready):
     print(table.table)
 
 
-@click.command()
-@click.option('--option', type=click.Choice(['append-mode','create-mode','exit']), prompt=True, show_choices=True)
 def main_options(option):
     """Options:
-    append-mode: it will append only new highlights to existing files, while creating new files in the ouput folder for new books.
-    create-mode: it will avoid appending to existing files, creating new files for every book to be exported (new or existing).
-    exit: finish de program without making any changes.
+    append: it will append only new highlights to existing files, while creating new files in the ouput folder for new books.
+    create: it will avoid appending to existing files, creating new files for every book to be exported (new or existing).
     """
     # option = click.prompt('append-mode / create-mode', type=str)
-    if option == 'append-mode':
+    if option == 'append':
         append_to_files(existing_files_dict)
         create_files(new_files_dict)
         store_date(current_last_date)
-    elif option == 'create-mode':
+    elif option == 'create':
         create_files(full_dict)
         store_date(current_last_date)
-    elif option == 'exit':
+    else:
+        print('Nothing was exported.')
         pass
       
     quit()
 
 if __name__ == "__main__":
     full_list = get_new_clippings_list(clippings_txt)
-    # Decision: Filter by date?
-    full_dict, all_highlights_counter = get_clippings_dictio(full_list, input('Filter highlights from previous exports? [yes/no]: '))
+    full_dict, all_highlights_counter = get_clippings_dictio(full_list, args.filter_date)
     new_files_dict, existing_files_dict, highlight_counter = separate_clippings_new_old(full_dict)
     list_to_show = counter_of_new_highlights(new_files_dict, existing_files_dict, all_highlights_counter)
     print_detail_list(list_to_show)
-    # Decision: append to existing ? Create new files ? Exit ?
-    main_options() # no argument because it's passed via command-line using click module
+    main_options(args.mode)
 
 
 
