@@ -1,10 +1,12 @@
 import argparse
 import datetime
+import sys
 import yaml
 
 from pathlib import Path
 
 from src.tools import store_date, get_new_clippings_list, append_to_files, create_files, get_clippings_dictio, separate_clippings_new_old, counter_of_new_highlights, print_detail_list
+
 
 ### Paths & Files ### 
 
@@ -29,8 +31,15 @@ if not last_exported_date:
 
 #### CLI arguments ###
 
-parser = argparse.ArgumentParser(description="Process Kindle Clippings.")
-parser.add_argument('mode', choices=['append','create','show-list'], help="Which mode should we use? (append|create|show-list")
+parser = argparse.ArgumentParser(description="Process Kindle Clippings.",formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('mode', choices=['append','create','show-list'], help="""
+    Which mode should we use? (append|create|show-list):
+        append: look for existing files and only add highlights that were not previously stored. If the file doesn't exist, create a new one in the output folder.
+        create: create new files for every book in the output folder.
+        show-list: it won't create nor modify any file, just display the overview of generated highlights.
+    -------------------------------
+    NOTE: Every time a file is create, it will overwrite any existing file in the output folder with the same name.
+    """)
 parser.add_argument('--filter-date', action='store_true', help='Only look for new clippings, based on the date store in the YAML (last clipping exported in a previous run)')
 args = parser.parse_args()
 
@@ -42,24 +51,33 @@ def main_options(option):
     """
     # option = click.prompt('append-mode / create-mode', type=str)
     if option == 'append':
-        append_to_files(existing_files_dict, list_books_stored, log_file)
-        create_files(new_files_dict)
-        store_date(last_exported_date, config_file_path, paths_yaml)
+        append_to_files(existing_files_dict, list_books_stored, log_file, highlight_counter)
+        create_files(new_files_dict, output_folder_path, log_file, highlight_counter)
+        if args.filter_date:
+            store_date(last_exported_date, config_file_path, paths_yaml)
     elif option == 'create':
-        create_files(full_dict, output_folder_path, log_file)
-        store_date(last_exported_date, config_file_path, paths_yaml)
+        create_files(full_dict, output_folder_path, log_file, all_highlights_counter)
+        if args.filter_date:
+            store_date(last_exported_date, config_file_path, paths_yaml)
     else:
         print('Nothing was exported.')
         pass
       
-    quit()
+    sys.exit('End program.')
+
 
 if __name__ == "__main__":
+
     full_list = get_new_clippings_list(clippings_txt)
-    full_dict, all_highlights_counter = get_clippings_dictio(full_list, last_exported_date, args.filter_date)
+
+    full_dict, all_highlights_counter, last_exported_date = get_clippings_dictio(full_list, last_exported_date, args.filter_date)
+
     new_files_dict, existing_files_dict, highlight_counter = separate_clippings_new_old(full_dict, list_books_stored)
-    list_to_show = counter_of_new_highlights(new_files_dict, existing_files_dict, all_highlights_counter)
+
+    list_to_show = counter_of_new_highlights(new_files_dict, existing_files_dict, all_highlights_counter, highlight_counter)
+
     print_detail_list(list_to_show)
+
     main_options(args.mode)
 
 

@@ -28,5 +28,8 @@ Paths:
 python kindle_clippings.py [-h] [--filter-date] {append,create,show-list}
 ```
 
-- mode: append, create, show-list
-- filter-date: (optional)
+- `mode` (required) 
+  - `append`: look for existing files and only add highlights that were not previously stored. If the file doesn't exist, create a new one in the output folder.
+  - `create`: create new files for every book in the output folder.
+  - `show-list`: it won't create nor modify any file, just display the overview of generated highlights.
+- `filter-date` (optional): Only look for new clippings, based on the date store in the YAML (last clipping exported in a previous run)
