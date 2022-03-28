@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "1af96af79971ba8a5e5092eca3a0c2de5f6b9731e72423c311cac11733cd722d"
+            "sha256": "023eea4327291f88d7120ea4bab22c83dae8da14a111d9c5cf460aec9b152592"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -46,6 +46,13 @@
             "index": "pypi",
             "version": "==8.0.4"
         },
+        "commonmark": {
+            "hashes": [
+                "sha256:452f9dc859be7f06631ddcb328b6919c67984aca654e5fefb3914d54691aed60",
+                "sha256:da2f38c92590f83de410ba1a3cbceafbc74fee9def35f9251ba9a971d6d66fd9"
+            ],
+            "version": "==0.9.1"
+        },
         "dateparser": {
             "hashes": [
                 "sha256:038196b1f12c7397e38aad3d61588833257f6f552baa63a1499e6987fa8d42d9",
@@ -53,6 +60,14 @@
             ],
             "index": "pypi",
             "version": "==1.1.1"
+        },
+        "pygments": {
+            "hashes": [
+                "sha256:44238f1b60a76d78fc8ca0528ee429702aae011c265fe6a8dd8b63049ae41c65",
+                "sha256:4e426f72023d88d03b2fa258de560726ce890ff3b630f88c21cbb8b2503b8c6a"
+            ],
+            "markers": "python_version >= '3.5'",
+            "version": "==2.11.2"
         },
         "python-dateutil": {
             "hashes": [
@@ -196,6 +211,14 @@
             ],
             "index": "pypi",
             "version": "==2022.3.2"
+        },
+        "rich": {
+            "hashes": [
+                "sha256:3fba9dd15ebe048e2795a02ac19baee79dc12cc50b074ef70f2958cd651b59a9",
+                "sha256:ce5c714e984a2d185399e4e1dd1f8b2feacb7cecfc576f1522425643a36a57ea"
+            ],
+            "index": "pypi",
+            "version": "==12.0.1"
         },
         "six": {
             "hashes": [

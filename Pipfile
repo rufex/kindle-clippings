@@ -16,6 +16,7 @@ terminaltables = "*"
 tzdata = "*"
 tzlocal = "*"
 PyYAML = "*"
+rich = "*"
 
 [dev-packages]
 pytest = "*"
