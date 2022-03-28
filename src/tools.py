@@ -1,16 +1,32 @@
+import argparse
 import codecs
 import dateparser
 import datetime
 import re
 import yaml
 
-from collections import defaultdict, Counter
-from operator import itemgetter
+from collections import Counter
 from pathlib import Path
-from terminaltables import AsciiTable
+from rich.console import Console
+from rich.table import Table
+
 
 today = datetime.datetime.now().strftime("%Y-%m-%d")
-global highlight_counter
+
+
+def setArgumentParser():
+    """Setting the argument parser"""
+    parser = argparse.ArgumentParser(description="Process Kindle Clippings.",formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('mode', choices=['append','create','show-list'], help="""
+    Which mode should we use? (append|create|show-list):
+        append: look for existing files and only add highlights that were not previously stored. If the file doesn't exist, create a new one in the output folder.
+        create: create new files for every book in the output folder.
+        show-list: it won't create nor modify any file, just display the overview of generated highlights.
+    -------------------------------
+    NOTE: Every time a file is create, it will overwrite any existing file in the output folder with the same name.
+    """)
+    parser.add_argument('--filter-date', action='store_true', help='Only look for new clippings, based on the date store in the YAML (last clipping exported in a previous run)')
+    return parser.parse_args()
 
 
 def get_date(input: str) -> datetime.datetime:
@@ -56,122 +72,157 @@ def get_new_clippings_list(input_file: Path) -> list:
     return list_of_highlights
 
 
-def get_clippings_dictio(input_list: list, last_exported_date: datetime.datetime, check_date=False):
-    """Get a list of clippings and order them in a DefaultDict.
-    Parameters
-    ----------
-    input_list: list
-    last_exported_date
-    check_date: boolean (default = False)    
-        if true, it will only consider highlights that are after the date stored in the config file (date from the last export run)
-    """
-    dictio_books = defaultdict(list)                          # DefaultDic = {key: [values]}
-    highlight_counter_full = Counter()
-    
-    for title, date_str, _ , highlight, _  in input_list:
-        date = get_date(date_str)
-        if check_date:
-            if date > last_exported_date:                         # Only append newer clippings
+class Book:
+
+    exported_books = []
+
+    def __init__(self, title):
+        """Iniatiate new book object."""
+        self.title = title
+        self.clippings = []
+        self.clippings_counter = Counter()
+        Book.exported_books.append(self)
+
+
+    def getBookIndex(target):
+        """
+        Search if a Book with the desired title was previously created.
+        Returns the index where it is store. Otherwise, return -1.
+        """
+        for index, book in enumerate(Book.exported_books):
+            if book.title == target:
+                return index
+        return -1
+
+
+    def getBookObjectByIndex(index):
+        """
+        Search for a specific Book already stored by it's index.
+        Returns a reference to the object.
+        """
+        book = None if index == -1 else Book.exported_books[index]
+        return book
+
+
+    def getBookObjectByTitle(title):
+        """
+        Search for a specific Book by it's title.
+        Returns a reference to the object.
+        """
+        index = Book.getBookIndex(title)
+        return Book.getBookObjectByIndex(index)
+
+
+    def process_clippings(input_list: list, last_exported_date: datetime.datetime, filter_date=False):
+        """Process each exported clipping from the list, and organize them in different Book objects.
+        Returns the date of the last clipping made (to be stored in the YAML).
+        """
+        for title, date_str, _, clipping, _ in input_list:
+            date = get_date(date_str)
+            append_clipping = False
+            title = re.sub(r'[^A-Za-zÀ-ÿ0-9-()\s]','',title)      # Remove special characters from book's name
+
+            if date > last_exported_date:
+                last_exported_date = date
                 append_clipping = True
-                last_exported_date = date                      # Store the last date to be exported to the YAML file
-            else:
-                append_clipping = False
-        else:
-            append_clipping = True
 
-        if append_clipping == True:
-            title = re.sub(r'[^A-Za-zÀ-ÿ0-9-()\s]','',title)      # Remove special characters from book's name     
-            dictio_books[title].append('* ' + highlight)          # DefaultDic: {Title:[Highlights]}
-            highlight_counter_full[title] += 1
-    
-    return dictio_books, highlight_counter_full, last_exported_date
+            if not filter_date:
+                append_clipping = True
+
+            if append_clipping == True:
+                book = Book.getBookObjectByTitle(title)
+                if not book:
+                    book = Book(title)
+                if clipping:
+                    book.clippings.append(clipping)
+                    book.clippings_counter['exported'] += 1
+        
+        return last_exported_date
 
 
-def separate_clippings_new_old(dictio: dict, list_books_stored: list):
-    """Separates the books that already have a file created.
-    For those which already a file exists, filtrates only the new highlights.
-    Keeps a count of the highlights that could be written to each file.
-    """
-    new_dictio_book = defaultdict(list)                       # DefaultDic for books that don't have previous file
-    existing_dictio_book = defaultdict(list)                  # DefaultDic for books that have previous file
-    highlight_counter = Counter()                             # To keep the count of amount of Highlights for each book.
-    
-    for book, highlights in dictio.items():
-        if book in str(list_books_stored):
-            path_file = [path for path in list_books_stored if path.stem == book]
-            path_file = Path(path_file[0])                        # What if more than one file? It will open the first one.
-            with codecs.open(path_file, 'r', 'utf-8') as f:       # Open existing file to obtain its content. Read mode.  
+    def establish_new_path(self, output_folder_path: Path):
+        """Create path for a new file."""
+        self.new_path = output_folder_path.joinpath(self.title+".txt")
+
+    def establish_existing_path(self, list_books_stored: list):
+        """Check if a file already exists and set also it's path."""
+        path_file = [path for path in list_books_stored if path.stem == self.title]
+        self.existing_path = Path(path_file[0]) if path_file else None
+
+
+    def save_to_new_file(self, log_file: Path):
+        """Export function for creating a new file in the ouput folder."""
+        if self.clippings:
+            with codecs.open(self.new_path,'w+','utf_8') as f:
+                f.write(str(self.title))
+                f.write(str('\r\n\r\n\r\n'))
+                f.write('\r\n\r\n'.join(self.clippings))
+
+            with codecs.open(log_file, 'a', 'utf-8') as log:
+                exported_count = self.clippings_counter['exported']
+                log_txt = f'[{today}] | New TXT File | Added {exported_count:.0f} to: {self.new_path.stem} \n'
+                log.write(log_txt)
+                print(log_txt)
+
+
+    def save_to_existing_file(self, log_file: Path):
+        """Export function for appending new highlights to an existing file.""" 
+        if self.new_clippings:
+            with codecs.open(self.existing_path, 'a', 'utf-8') as f:
+                f.write(str('\r\n\r\n'))            
+                f.write('\r\n\r\n'.join(self.new_clippings)) 
+
+            with codecs.open(log_file, 'a', 'utf-8') as log:
+                exported_count = self.clippings_counter['new']              
+                log_txt = f'[{today}] | Existing TXT File | Added {exported_count:.0f} to: {self.existing_path.stem} \n'
+                log.write(log_txt)
+                print(log_txt)
+
+
+    def separate_existing_clippings(self):
+        """Separate the clippings already stored from the new ones."""
+        
+        self.new_clippings = []
+        self.existing_clippings = []
+
+        if self.existing_path:
+            with codecs.open(self.existing_path, 'r', 'utf-8') as f:
                 txt_stored = f.read()
-            
-            for highlight in highlights:                          # Check if the new highlights are already stored in the existing file.
-                if highlight not in str(txt_stored):
-                    existing_dictio_book[book].append(highlight) 
-                    highlight_counter[book] += 1
-            
+                
+            for clipping in self.clippings:         
+                if clipping not in str(txt_stored):   # Check if the new highlights are not already stored in the existing file.
+                    self.new_clippings.append(clipping)
+                    self.clippings_counter['new'] += 1
+                else:
+                    self.existing_clippings.append(clipping)
+                    self.clippings_counter['existing'] += 1
         else:
-            for highlight in highlights:
-                new_dictio_book[book].append(highlight)
-                highlight_counter[book] += 1
-
-    return new_dictio_book, existing_dictio_book, highlight_counter
+            self.clippings_counter['new'] = self.clippings_counter['exported']
 
 
-def append_to_files(dictio: dict, list_books_stored: list, log_file: Path, highlight_counter):
-    """Export function for appending new highlights to existing files."""
-    for book, highlights in dictio.items():
-        path_file = [path for path in list_books_stored if path.stem == book]
-        path_file = Path(path_file[0]) 
-    
-        with codecs.open(path_file, 'a', 'utf-8') as f:   # Open existing file. Append mode.
-            f.write(str('\r\n\r\n'))            
-            f.write('\r\n\r\n'.join(highlights)) 
+    def render_table(mode):
+        """Create and render a table with an overview of all the data."""
+        table = Table(title="Kindle Clippings")
 
-        with codecs.open(log_file, 'a', 'utf-8') as log:              # Open log-file. Append mode.
-            log_txt = f'[{today}] Added {highlight_counter[book]:.0f} to existing file: {path_file.stem} \n'
-            log.write(log_txt)
-            print(log_txt)
+        table.add_column("Title", justify="left", header_style="bold", style="yellow", no_wrap=True)
+        if mode == 'append' or mode == 'show-list':
+            table.add_column("Existing", justify="right", header_style="bold")
+            table.add_column("New", justify="right", header_style="bold")
+        table.add_column("Total", justify="right", header_style="bold")
 
+        for book in Book.exported_books:
+            if mode == 'append' or mode == 'show-list':
+                table.add_row(
+                    book.title, 
+                    str(book.clippings_counter['existing']),
+                    str(book.clippings_counter['new']),
+                    str(book.clippings_counter['exported'])
+                )
+            else:
+                table.add_row(
+                    book.title, 
+                    str(book.clippings_counter['exported'])
+                )
 
-def create_files(dictio: dict, output_folder_path: Path, log_file: Path, highlight_counter):
-    """Export function for creating new files in the ouput folder."""
-    for book, highlights in dictio.items():
-        path_file = output_folder_path.joinpath(book+".txt")  # Asign Book's Title as file name 
-        with codecs.open(path_file,'w+','utf_8') as f:    # New file. Write mode.
-            f.write(str(book))                            # Write Book's Title in txt file
-            f.write(str('\r\n\r\n\r\n'))                  # Add spaces between title and highlights
-            f.write('\r\n\r\n'.join(highlights))          # Write Highlights in txt file, with whitespaces between them
-
-        with codecs.open(log_file, 'a', 'utf-8') as log:              # Open log-file. Append mode.
-            log_txt = f'[{today}] New TXT File. Added {highlight_counter[book]:.0f} to new file: {path_file.stem} \n'
-            log.write(log_txt)
-            print(log_txt)
-
-
-def counter_of_new_highlights(new_dictio_book, existing_dictio_book, highlight_counter_full, highlight_counter):
-    """Make a list of books with their counts of total and new highlights.
-    Format: ['Book/Article Name', 'File Exists/Doesn't Exists', Total, New]
-    """
-    export_list = list()
-    for book, total_count in highlight_counter_full.items():
-        if len(book) > 70:
-            book = book[:67]+'...'
-        if book in existing_dictio_book.keys():
-            export_list.append((book,'Yes', total_count-highlight_counter[book], highlight_counter[book], total_count))
-        elif book in new_dictio_book.keys():
-            export_list.append((book,'No', 0, highlight_counter_full[book], total_count))
-        elif book not in existing_dictio_book.keys() and book not in new_dictio_book.keys():
-            export_list.append((book,'Yes', total_count, 0, total_count)) 
-    return export_list
-
-
-def print_detail_list(list_ready):
-    """Print the count list in a formatted ASCII table"""
-    sorted_l = sorted(list_ready, key=itemgetter(1),reverse=True)
-    table_data = []
-    table_data.append(['Book/Article', 'File already exists?', 'Existing (stored)','New (not stored yet)', 'Total exported (now)'])
-    for each in sorted_l:
-        table_data.append(each)
-    table = AsciiTable(table_data)
-    table.title = 'Highlights overview'
-    print('')
-    print(table.table)
+        console = Console()
+        console.print(table)
