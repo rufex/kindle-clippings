@@ -24,7 +24,7 @@ Paths:
 1. Make sure your YAML contains all the needed information.
 1. Run your script from the your terminal, passing the needed arguments.
 
-```
+```python
 python kindle_clippings.py [-h] [--filter-date] {append,create,show-list}
 ```
 

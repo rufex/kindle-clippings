@@ -134,6 +134,7 @@ class Book:
                 if not book:
                     book = Book(title)
                 if clipping:
+                    clipping = "* "+clipping # Add a bullet to every row.
                     book.clippings.append(clipping)
                     book.clippings_counter['exported'] += 1
         
